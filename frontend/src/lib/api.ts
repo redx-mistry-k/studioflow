@@ -1,7 +1,8 @@
 // API client — same-origin `/api` (vite proxies in dev, nginx in prod).
 // Auth travels two ways: the Authorization header (API clients, curl) AND an
-// HttpOnly cookie set at login (browsers). The cookie survives proxies that
-// strip the Authorization header, so `credentials: "include"` is required.
+// HttpOnly cookie set at login (browsers). The cookie plus the X-SF-Token
+// header survive proxies that strip the Authorization header, so both are
+// sent and `credentials: "include"` is required.
 const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 export class ApiError extends Error {
@@ -28,7 +29,7 @@ export async function api<T = unknown>(
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}`, "X-SF-Token": token } : {}),
     },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });

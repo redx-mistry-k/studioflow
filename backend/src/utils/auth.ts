@@ -48,6 +48,8 @@ export function clearAuthCookie(res: Response) {
 export function tokenFromRequest(req: Request): string | null {
   const header = req.headers.authorization || "";
   if (header.startsWith("Bearer ")) return header.slice(7);
+  const custom = req.headers["x-sf-token"];
+  if (typeof custom === "string" && custom) return custom;
   const raw = req.headers.cookie || "";
   for (const part of raw.split(";")) {
     const [k, ...rest] = part.trim().split("=");
