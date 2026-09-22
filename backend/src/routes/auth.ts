@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { db, uuid, nowIso, toBool } from "../db";
 import { asyncHandler, validate, ApiError } from "../utils/http";
-import { hashPassword, verifyPassword, signToken } from "../utils/auth";
+import { hashPassword, verifyPassword, signToken, setAuthCookie, clearAuthCookie } from "../utils/auth";
 import { requireAuth } from "../middleware/auth";
 import { audit } from "../services/audit";
 import { countRows } from "../db/queries";
@@ -25,6 +25,7 @@ router.post(
     if (!ok) throw new ApiError(401, "Invalid email or password");
     const token = signToken({ sub: user.id, email: user.email, role: user.role, name: user.name });
     await audit(user.id, "LOGIN", "User", user.id);
+    setAuthCookie(res, token);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   })
 );
@@ -44,6 +45,7 @@ router.post(
       .returningAll()
       .executeTakeFirstOrThrow();
     const token = signToken({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    setAuthCookie(res, token);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   })
 );
@@ -60,6 +62,15 @@ router.get(
       .executeTakeFirst();
     if (!user) throw new ApiError(404, "User not found");
     res.json({ ...user, active: toBool(user.active) });
+  })
+);
+
+// POST /api/auth/logout — clears the auth cookie (no auth required)
+router.post(
+  "/logout",
+  asyncHandler(async (_req, res) => {
+    clearAuthCookie(res);
+    res.json({ ok: true });
   })
 );
 

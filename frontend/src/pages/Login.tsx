@@ -6,6 +6,17 @@ import { Button, Field, Input } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 
 export default function Login() {
+  const [expired] = useState(() => {
+    try {
+      if (sessionStorage.getItem("sf_expired")) {
+        sessionStorage.removeItem("sf_expired");
+        return true;
+      }
+    } catch {
+      /* ignore */
+    }
+    return false;
+  });
   const [email, setEmail] = useState("admin@studioflow.local");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -52,6 +63,11 @@ export default function Login() {
         </div>
         <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
           <h2 className="mb-4 text-[15px] font-semibold">{setup ? "First-time setup" : "Sign in"}</h2>
+          {expired && !setup && (
+            <p className="mb-3 rounded-lg bg-amber-50 p-2.5 text-center text-[13px] text-amber-700">
+              Your session expired — please sign in again.
+            </p>
+          )}
           {setup && (
             <div className="mb-3">
               <Field label="Your name" required>

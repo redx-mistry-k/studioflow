@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiError } from "./lib/api";
 import { AuthProvider, useAuth, roleRank } from "./auth/AuthContext";
 import { ToastProvider } from "./components/toast";
 import { Layout } from "./components/Layout";
@@ -23,7 +24,11 @@ import PublicEnquiry from "./pages/PublicEnquiry";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15000 },
+    queries: {
+      retry: (count, err) => (err instanceof ApiError && err.status === 401 ? false : count < 1),
+      refetchOnWindowFocus: false,
+      staleTime: 15000,
+    },
   },
 });
 

@@ -51,6 +51,7 @@ export default function Reports() {
     try {
       const token = getToken();
       const res = await fetch(`/api/reports/export${qs({ type, preset })}`, {
+        credentials: "include",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error(`Export failed (${res.status})`);

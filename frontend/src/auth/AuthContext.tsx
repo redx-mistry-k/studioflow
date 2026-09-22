@@ -28,6 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("sf_token");
     setToken(null);
     setUser(null);
+    // Best-effort: also clear the HttpOnly auth cookie server-side.
+    api("/auth/logout", { method: "POST", token: null }).catch(() => undefined);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -51,6 +53,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Any API call that 401s mid-session (expired/disabled/cleared) bounces here.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      if (!getToken()) return;
+      try {
+        sessionStorage.setItem("sf_expired", "1");
+      } catch {
+        /* ignore */
+      }
+      logout();
+    };
+    window.addEventListener("sf:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("sf:unauthorized", onUnauthorized);
+  }, [logout]);
+
+  // Signed out in another tab? Follow along.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "sf_token" && !e.newValue) {
+        setToken(null);
+        setUser(null);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const login = useCallback(
     async (email: string, password: string) => {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyToken, JwtPayload } from "../utils/auth";
+import { verifyToken, tokenFromRequest, JwtPayload } from "../utils/auth";
 import { db, toBool } from "../db";
 
 declare global {
@@ -13,8 +13,7 @@ declare global {
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const token = tokenFromRequest(req);
     if (!token) return res.status(401).json({ error: "Missing auth token" });
     const payload = verifyToken(token);
     const user = await db.selectFrom("users").selectAll().where("id", "=", payload.sub).executeTakeFirst();

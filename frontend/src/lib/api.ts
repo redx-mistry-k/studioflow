@@ -1,4 +1,7 @@
 // API client — same-origin `/api` (vite proxies in dev, nginx in prod).
+// Auth travels two ways: the Authorization header (API clients, curl) AND an
+// HttpOnly cookie set at login (browsers). The cookie survives proxies that
+// strip the Authorization header, so `credentials: "include"` is required.
 const BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 export class ApiError extends Error {
@@ -22,6 +25,7 @@ export async function api<T = unknown>(
   const token = opts.token !== undefined ? opts.token : getToken();
   const res = await fetch(`${BASE}/api${path}`, {
     method: opts.method || "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -37,6 +41,11 @@ export async function api<T = unknown>(
   }
   if (!res.ok) {
     const msg = (data as { error?: string })?.error || `Request failed (${res.status})`;
+    if (res.status === 401 && getToken() && !path.startsWith("/auth/login")) {
+      // Session died mid-use (expired token, disabled account, signed out
+      // elsewhere). Tell the auth layer to bounce back to the login screen.
+      window.dispatchEvent(new CustomEvent("sf:unauthorized"));
+    }
     throw new ApiError(res.status, msg, (data as { details?: unknown })?.details);
   }
   return data as T;

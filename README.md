@@ -144,8 +144,9 @@ studioflow/
 
 ## API overview
 
-All endpoints live under `/api`. Authenticated routes need
-`Authorization: Bearer <JWT>`.
+All endpoints live under `/api`. Authenticated routes accept `Authorization: Bearer <JWT>`
+or the `sf_token` HttpOnly cookie set at login (browsers send it automatically;
+this also keeps auth working behind proxies that strip the `Authorization` header).
 
 - `POST /api/auth/login|bootstrap`, `GET /api/auth/me`, password change
 - `GET/PATCH /api/dashboard`, `/api/search?q=`, `/api/calendar?start&end`
